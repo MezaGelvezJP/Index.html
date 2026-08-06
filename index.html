@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encuesta de Preferencias — Dayana Bayona</title>
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<style>
+  :root{
+    --cream:#fffef0;
+    --black:#1c1a1a;
+    --sky:#88e7fa;
+    --sky-dim: rgba(136,231,250,0.14);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{ background:var(--black); color-scheme:dark; }
+  body{
+    background:var(--black);
+    color:var(--cream);
+    font-family:'Plus Jakarta Sans', -apple-system, Arial, sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .titlefont{ font-family:'Unbounded', 'Arial Narrow', sans-serif; }
+  .blueprint{
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.05;
+    background-image:
+      linear-gradient(var(--sky) 1px, transparent 1px),
+      linear-gradient(90deg, var(--sky) 1px, transparent 1px);
+    background-size:48px 48px;
+  }
+  .wrap{
+    position:relative; z-index:2;
+    max-width:640px; margin:0 auto;
+    min-height:100vh;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding:38px 24px 22px;
+    border-bottom:1px solid rgba(255,254,240,0.12);
+  }
+  .eyebrow{
+    font-family:'Plus Jakarta Sans', -apple-system, Arial, sans-serif; font-size:11px; letter-spacing:0.28em; text-transform:uppercase;
+    color:var(--sky); font-weight:600; margin-bottom:14px;
+  }
+  .logo{
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .logo .name{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-weight:800; font-size:22px; letter-spacing:0.01em;
+  }
+  .logo .script{
+    font-family:'Caveat', cursive; font-weight:700; font-size:30px; color:var(--sky); margin-left:-2px;
+  }
+  .logo .role{
+    width:100%; font-family:'Plus Jakarta Sans', -apple-system, Arial, sans-serif; font-size:10px; letter-spacing:0.32em; text-transform:uppercase;
+    color:rgba(255,254,240,0.55); margin-top:2px;
+  }
+  .tagline{
+    margin-top:16px; font-size:13px; color:rgba(255,254,240,0.7); line-height:1.5;
+  }
+  .tagline b{ color:var(--cream); }
+
+  main{ flex:1; padding:28px 24px 40px; position:relative; }
+
+  .progress-row{
+    display:flex; align-items:center; gap:12px; margin-bottom:26px;
+  }
+  .progress-track{
+    flex:1; height:3px; background:rgba(255,254,240,0.14); border-radius:3px; overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background:var(--sky); width:10%; transition:width .3s ease;
+  }
+  .progress-label{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-size:11px; letter-spacing:0.05em; color:var(--sky); white-space:nowrap;
+  }
+
+  .card{ display:none; }
+  .card.active{ display:block; }
+
+  .q-num{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-size:13px; color:rgba(255,254,240,0.4); margin-bottom:10px;
+  }
+  .q-text{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-weight:600; font-size:22px; line-height:1.28; margin-bottom:6px; color:var(--cream);
+  }
+  .q-hint{
+    font-size:13px; color:rgba(255,254,240,0.55); margin-bottom:22px; line-height:1.5;
+  }
+
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .option{
+    border:1px solid rgba(255,254,240,0.16);
+    border-radius:14px;
+    padding:15px 16px;
+    display:flex; align-items:center; gap:12px;
+    cursor:pointer;
+    background:rgba(255,254,240,0.02);
+  }
+  .option.selected{
+    border-color:var(--sky);
+    background:var(--sky-dim);
+  }
+  .option .dot{
+    width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(255,254,240,0.4);
+    flex-shrink:0; position:relative;
+  }
+  .option.selected .dot{ border-color:var(--sky); }
+  .option.selected .dot::after{
+    content:''; position:absolute; inset:3px; background:var(--sky); border-radius:50%;
+  }
+  .option .txt{ font-size:14.5px; font-weight:500; line-height:1.4; color:var(--cream); }
+  .option .sub{ font-size:12px; color:rgba(255,254,240,0.5); margin-top:2px; }
+
+  textarea.freeform{
+    width:100%; min-height:96px; border-radius:14px; border:1px solid rgba(255,254,240,0.16);
+    background:rgba(255,254,240,0.02); color:var(--cream); font-family:'Plus Jakarta Sans', -apple-system, Arial, sans-serif; font-size:14px;
+    padding:14px 16px; resize:vertical;
+  }
+  textarea.freeform:focus{ outline:none; border-color:var(--sky); }
+
+  .nav-row{
+    display:flex; justify-content:space-between; align-items:center; margin-top:30px; gap:12px;
+  }
+  button{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-size:12px; letter-spacing:0.04em; text-transform:uppercase;
+    border-radius:999px; padding:13px 22px; cursor:pointer; border:1px solid transparent;
+  }
+  .btn-primary{ background:var(--sky); color:var(--black); font-weight:700; border:none; }
+  .btn-primary:disabled{ opacity:0.35; }
+  .btn-ghost{ background:transparent; color:rgba(255,254,240,0.6); border:1px solid rgba(255,254,240,0.2); }
+
+  .result{ display:none; }
+  .result.active{ display:block; }
+  .result h2{
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-weight:800; font-size:26px; margin-bottom:8px; line-height:1.25; color:var(--cream);
+  }
+  .result .sub{ color:rgba(255,254,240,0.6); font-size:14px; margin-bottom:26px; }
+  .summary-item{
+    border-top:1px solid rgba(255,254,240,0.12); padding:14px 0;
+  }
+  .summary-item .q{ font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--sky); margin-bottom:4px; }
+  .summary-item .a{ font-size:14.5px; font-weight:500; color:var(--cream); }
+  .final-cta{
+    margin-top:30px; padding:20px; border-radius:16px; background:rgba(136,231,250,0.08); border:1px solid rgba(136,231,250,0.25);
+  }
+  .final-cta p{ font-size:13px; line-height:1.6; color:rgba(255,254,240,0.8); }
+  .download-row{
+    margin-top:22px; display:flex; flex-direction:column; gap:10px;
+  }
+  .btn-download{
+    width:100%; background:var(--sky); color:var(--black); font-weight:700; border:none;
+    font-family:'Unbounded', 'Arial Narrow', sans-serif; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase;
+    border-radius:999px; padding:16px 22px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn-download:disabled{ opacity:0.5; }
+  .download-note{ font-size:11.5px; color:rgba(255,254,240,0.45); text-align:center; }
+  footer{
+    padding:20px 24px 36px; border-top:1px solid rgba(255,254,240,0.1);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .footer-line{ height:1px; flex:1; background:rgba(255,254,240,0.2); margin:0 12px; }
+  footer span{ font-family:'Unbounded', 'Arial Narrow', sans-serif; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,254,240,0.45); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="blueprint"></div>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Diseñamos lo extraordinario</div>
+    <div class="logo">
+      <span class="name">ANDRÉS</span><span class="script">Galvis</span>
+      <span class="role">Arquitecto — Encuesta de preferencias</span>
+    </div>
+    <p class="tagline">Hola <b>Dayana</b> 👋 Antes de diseñar tu espacio, queremos entender cómo lo sientes tú. Estas 10 preguntas nos ayudan a leer tu energía, tus gustos y tu forma de moverte [...]
+  </header>
+
+  <main>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">1 / 10</div>
+    </div>
+
+    <div id="cards">
+
+      <div class="card active" data-index="0">
+        <div class="q-num">Pregunta 1 de 10</div>
+        <div class="q-text">¿Qué energía quieres sentir apenas entras al espacio?</div>
+        <div class="q-hint">No pienses en decoración todavía, piensa en la sensación.</div>
+        <div class="options">
+          <div class="option" data-qindex="0"><div class="dot"></div><div><div class="txt">Intensidad y fuerza</div><div class="sub">algo que te empuje a rendir al máximo</div></div></div>
+          <div class="option" data-qindex="0"><div class="dot"></div><div><div class="txt">Calma y enfoque</div><div class="sub">un lugar sereno donde te concentras en ti</div></div></div>
+          <div class="option" data-qindex="0"><div class="dot"></div><div><div class="txt">Energía social</div><div class="sub">vibra de comunidad, ruido bueno, gente</div></div></div>
+          <div class="option" data-qindex="0"><div class="dot"></div><div><div class="txt">Exclusividad</div><div class="sub">sentirte en un espacio premium, solo para ti</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="1">
+        <div class="q-num">Pregunta 2 de 10</div>
+        <div class="q-text">¿Qué tipo de espacio te representa más?</div>
+        <div class="q-hint">Elige el que más se parezca a ti, no al que "debería" gustarte.</div>
+        <div class="options">
+          <div class="option" data-qindex="1"><div class="dot"></div><div><div class="txt">Industrial crudo</div><div class="sub">concreto, metal, cero adornos</div></div></div>
+          <div class="option" data-qindex="1"><div class="dot"></div><div><div class="txt">Minimalista cálido</div><div class="sub">líneas limpias, madera, luz suave</div></div></div>
+          <div class="option" data-qindex="1"><div class="dot"></div><div><div class="txt">Lujo moderno</div><div class="sub">materiales finos, negro, acentos dorados</div></div></div>
+          <div class="option" data-qindex="1"><div class="dot"></div><div><div class="txt">Orgánico natural</div><div class="sub">plantas, piedra, luz natural, texturas</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="2">
+        <div class="q-num">Pregunta 3 de 10</div>
+        <div class="q-text">Cuando entrenas o trabajas en algo, ¿cómo prefieres hacerlo?</div>
+        <div class="options">
+          <div class="option" data-qindex="2"><div class="dot"></div><div><div class="txt">Sola, en mi propio espacio</div><div class="sub">privacidad total</div></div></div>
+          <div class="option" data-qindex="2"><div class="dot"></div><div><div class="txt">En grupo pequeño</div><div class="sub">con gente cercana, sin multitudes</div></div></div>
+          <div class="option" data-qindex="2"><div class="dot"></div><div><div class="txt">Rodeada de energía colectiva</div><div class="sub">clases, movimiento, ruido</div></div></div>
+          <div class="option" data-qindex="2"><div class="dot"></div><div><div class="txt">Depende del día</div><div class="sub">a veces sola, a veces acompañada</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="3">
+        <div class="q-num">Pregunta 4 de 10</div>
+        <div class="q-text">¿Qué paleta de color te hace sentir mejor en un espacio?</div>
+        <div class="options">
+          <div class="option" data-qindex="3"><div class="dot"></div><div><div class="txt">Negros y grises profundos</div><div class="sub">seriedad, poder</div></div></div>
+          <div class="option" data-qindex="3"><div class="dot"></div><div><div class="txt">Blancos y cremas</div><div class="sub">limpieza, claridad mental</div></div></div>
+          <div class="option" data-qindex="3"><div class="dot"></div><div><div class="txt">Tonos tierra y madera</div><div class="sub">calidez, lo natural</div></div></div>
+          <div class="option" data-qindex="3"><div class="dot"></div><div><div class="txt">Un acento vibrante</div><div class="sub">como un azul cielo o color de marca fuerte</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="4">
+        <div class="q-num">Pregunta 5 de 10</div>
+        <div class="q-text">¿Qué tipo de luz prefieres?</div>
+        <div class="options">
+          <div class="option" data-qindex="4"><div class="dot"></div><div><div class="txt">Luz natural abundante</div><div class="sub">ventanales, sensación de exterior</div></div></div>
+          <div class="option" data-qindex="4"><div class="dot"></div><div><div class="txt">Luz cálida y tenue</div><div class="sub">ambiente íntimo, casi de spa</div></div></div>
+          <div class="option" data-qindex="4"><div class="dot"></div><div><div class="txt">Luz técnica y directa</div><div class="sub">foco, rendimiento, claridad total</div></div></div>
+          <div class="option" data-qindex="4"><div class="dot"></div><div><div class="txt">Luz dramática con contraste</div><div class="sub">sombras marcadas, puntos de luz específicos</div></div></[...]
+        </div>
+      </div>
+
+      <div class="card" data-index="5">
+        <div class="q-num">Pregunta 6 de 10</div>
+        <div class="q-text">¿Qué materiales te generan más conexión al tocarlos o verlos?</div>
+        <div class="options">
+          <div class="option" data-qindex="5"><div class="dot"></div><div><div class="txt">Concreto y microcemento</div><div class="sub">crudo, honesto</div></div></div>
+          <div class="option" data-qindex="5"><div class="dot"></div><div><div class="txt">Madera natural</div><div class="sub">cálido, terroso</div></div></div>
+          <div class="option" data-qindex="5"><div class="dot"></div><div><div class="txt">Metal y acero</div><div class="sub">frío, técnico, fuerte</div></div></div>
+          <div class="option" data-qindex="5"><div class="dot"></div><div><div class="txt">Textiles y acabados suaves</div><div class="sub">confort, textura amable</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="6">
+        <div class="q-num">Pregunta 7 de 10</div>
+        <div class="q-text">Si tu espacio ideal fuera una palabra, ¿cuál sería?</div>
+        <div class="q-hint">Elige la que más te resuene en el pecho.</div>
+        <div class="options">
+          <div class="option" data-qindex="6"><div class="dot"></div><div><div class="txt">Poder</div></div></div>
+          <div class="option" data-qindex="6"><div class="dot"></div><div><div class="txt">Equilibrio</div></div></div>
+          <div class="option" data-qindex="6"><div class="dot"></div><div><div class="txt">Comunidad</div></div></div>
+          <div class="option" data-qindex="6"><div class="dot"></div><div><div class="txt">Estatus</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="7">
+        <div class="q-num">Pregunta 8 de 10</div>
+        <div class="q-text">¿Qué tan importante es que el espacio se vea "instagrameable"?</div>
+        <div class="options">
+          <div class="option" data-qindex="7"><div class="dot"></div><div><div class="txt">Muy importante</div><div class="sub">quiero que la gente lo comparta</div></div></div>
+          <div class="option" data-qindex="7"><div class="dot"></div><div><div class="txt">Importante pero no lo principal</div><div class="sub">que se vea bien, sin forzarlo</div></div></div>
+          <div class="option" data-qindex="7"><div class="dot"></div><div><div class="txt">Poco importante</div><div class="sub">prefiero funcionalidad sobre estética social</div></div></div>
+          <div class="option" data-qindex="7"><div class="dot"></div><div><div class="txt">No me interesa</div><div class="sub">el espacio es para sentirlo, no mostrarlo</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="8">
+        <div class="q-num">Pregunta 9 de 10</div>
+        <div class="q-text">¿Cómo quieres que se sienta alguien que nunca te ha visto, al entrar a tu espacio?</div>
+        <div class="options">
+          <div class="option" data-qindex="8"><div class="dot"></div><div><div class="txt">Que sienta que este lugar es serio y profesional</div></div></div>
+          <div class="option" data-qindex="8"><div class="dot"></div><div><div class="txt">Que sienta calma inmediata</div></div></div>
+          <div class="option" data-qindex="8"><div class="dot"></div><div><div class="txt">Que sienta que quiere quedarse y ser parte</div></div></div>
+          <div class="option" data-qindex="8"><div class="dot"></div><div><div class="txt">Que sienta que está en un lugar exclusivo</div></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-index="9">
+        <div class="q-num">Pregunta 10 de 10</div>
+        <div class="q-text">Cuéntanos con tus propias palabras: ¿qué es lo que NO puede faltar en tu espacio?</div>
+        <div class="q-hint">Esta es libre — escribe lo primero que se te venga a la mente.</div>
+        <textarea class="freeform" placeholder="Escribe aquí..." data-qindex="9"></textarea>
+      </div>
+
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-ghost" id="backBtn" style="visibility:hidden;">Atrás</button>
+      <button class="btn-primary" id="nextBtn" disabled>Siguiente</button>
+    </div>
+
+    <div class="result" id="result">
+      <h2>Listo, Dayana. Ya tenemos tu perfil ✨</h2>
+      <p class="sub">Esto es lo que Andrés va a usar como punto de partida para tu concepto.</p>
+      <div id="summaryList"></div>
+      <div class="final-cta">
+        <p>📄 Descarga tu resumen en PDF y envíaselo a Andrés por WhatsApp o Instagram. Con esto arrancamos el brief creativo de tu espacio.</p>
+      </div>
+      <div class="download-row">
+        <button class="btn-download" id="downloadBtn">⬇ Descargar PDF</button>
+        <div class="download-note">Se descarga directo a tu dispositivo — luego solo lo reenvías.</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Andrés Galvis</span>
+    <div class="footer-line"></div>
+    <span>Moderna Arquitectura</span>
+  </footer>
+</div>
+
+<script>
+var questionTexts = [
+  "¿Qué energía quieres sentir apenas entras al espacio?",
+  "¿Qué tipo de espacio te representa más?",
+  "Cuando entrenas o trabajas en algo, ¿cómo prefieres hacerlo?",
+  "¿Qué paleta de color te hace sentir mejor en un espacio?",
+  "¿Qué tipo de luz prefieres?",
+  "¿Qué materiales te generan más conexión al tocarlos o verlos?",
+  "Si tu espacio ideal fuera una palabra, ¿cuál sería?",
+  "¿Qué tan importante es que el espacio se vea 'instagrameable'?",
+  "¿Cómo quieres que se sienta alguien que nunca te ha visto, al entrar a tu espacio?",
+  "Cuéntanos con tus propias palabras: ¿qué es lo que NO puede faltar en tu espacio?"
+];
+
+var totalQuestions = 10;
+var current = 0;
+var answers = new Array(totalQuestions).fill(null);
+
+var cards = document.querySelectorAll('.card');
+var progressFill = document.getElementById('progressFill');
+var progressLabel = document.getElementById('progressLabel');
+var nextBtn = document.getElementById('nextBtn');
+var backBtn = document.getElementById('backBtn');
+var resultEl = document.getElementById('result');
+var mainNavRow = document.querySelector('.nav-row');
+var cardsEl = document.getElementById('cards');
+
+function updateProgress(){
+  progressFill.style.width = (((current + 1) / totalQuestions) * 100) + '%';
+  progressLabel.textContent = (current + 1) + ' / ' + totalQuestions;
+}
+
+function showCard(i){
+  for(var c = 0; c < cards.length; c++){ cards[c].classList.remove('active'); }
+  cards[i].classList.add('active');
+  updateProgress();
+  backBtn.style.visibility = i === 0 ? 'hidden' : 'visible';
+  nextBtn.textContent = i === totalQuestions - 1 ? 'Ver resumen' : 'Siguiente';
+  nextBtn.disabled = !answers[i];
+}
+
+document.querySelectorAll('.option').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    var qi = parseInt(opt.getAttribute('data-qindex'));
+    var siblings = document.querySelectorAll('.option[data-qindex="' + qi + '"]');
+    siblings.forEach(function(s){ s.classList.remove('selected'); });
+    opt.classList.add('selected');
+    var txtEl = opt.querySelector('.txt');
+    answers[qi] = txtEl ? txtEl.textContent : 'Seleccionado';
+    nextBtn.disabled = false;
+  });
+});
+
+document.querySelectorAll('.freeform').forEach(function(ta){
+  ta.addEventListener('input', function(){
+    var qi = parseInt(ta.getAttribute('data-qindex'));
+    answers[qi] = ta.value.trim();
+    nextBtn.disabled = answers[qi] === '';
+  });
+});
+
+nextBtn.addEventListener('click', function(){
+  if(current < totalQuestions - 1){
+    current++;
+    showCard(current);
+  } else {
+    showResult();
+  }
+});
+
+backBtn.addEventListener('click', function(){
+  if(current > 0){
+    current--;
+    showCard(current);
+  }
+});
+
+function showResult(){
+  cardsEl.style.display = 'none';
+  mainNavRow.style.display = 'none';
+  document.querySelector('.progress-row').style.display = 'none';
+  resultEl.classList.add('active');
+  var list = document.getElementById('summaryList');
+  list.innerHTML = '';
+  for(var i = 0; i < totalQuestions; i++){
+    list.innerHTML += '<div class="summary-item">' +
+      '<div class="q">' + questionTexts[i] + '</div>' +
+      '<div class="a">' + (answers[i] || '—') + '</div>' +
+    '</div>';
+  }
+}
+
+function wrapText(doc, text, x, y, maxWidth, lineHeight){
+  var lines = doc.splitTextToSize(text, maxWidth);
+  for(var i = 0; i < lines.length; i++){ doc.text(lines[i], x, y + i * lineHeight); }
+  return y + lines.length * lineHeight;
+}
+
+document.getElementById('downloadBtn').addEventListener('click', function(){
+  var btn = document.getElementById('downloadBtn');
+
+  if(!window.jspdf){
+    alert('El generador de PDF no cargó (revisa tu conexión a internet) — intenta de nuevo en unos segundos.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Generando…';
+
+  try{
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+    var black = [28, 26, 26];
+    var cream = [255, 254, 240];
+    var sky = [136, 231, 250];
+    var margin = 50;
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    var maxWidth = pageW - margin * 2;
+    var y = 0;
+
+    function newPage(){
+      doc.setFillColor(black[0], black[1], black[2]);
+      doc.rect(0, 0, pageW, pageH, 'F');
+      y = 60;
+    }
+
+    newPage();
+
+    doc.setTextColor(sky[0], sky[1], sky[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('DISEÑAMOS LO EXTRAORDINARIO', margin, y);
+    y += 30;
+
+    doc.setTextColor(cream[0], cream[1], cream[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text('ANDRÉS GALVIS', margin, y);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 200, 190);
+    y += 16;
+    doc.text('ARQUITECTO — BRIEF DE PREFERENCIAS', margin, y);
+    y += 30;
+
+    doc.setDrawColor(sky[0], sky[1], sky[2]);
+    doc.setLineWidth(1);
+    doc.line(margin, y, pageW - margin, y);
+    y += 30;
+
+    doc.setTextColor(cream[0], cream[1], cream[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Perfil de Dayana Bayona', margin, y);
+    y += 18;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(190, 190, 180);
+    var dateStr = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+    doc.text('Generado el ' + dateStr, margin, y);
+    y += 34;
+
+    for(var i = 0; i < totalQuestions; i++){
+      if(y > pageH - 100){ doc.addPage(); newPage(); }
+
+      doc.setTextColor(sky[0], sky[1], sky[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('PREGUNTA ' + (i + 1) + ' DE ' + totalQuestions, margin, y);
+      y += 16;
+
+      doc.setTextColor(cream[0], cream[1], cream[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12.5);
+      y = wrapText(doc, questionTexts[i], margin, y, maxWidth, 15);
+      y += 6;
+
+      doc.setTextColor(sky[0], sky[1], sky[2]);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      var ans = answers[i] || '—';
+      y = wrapText(doc, ans, margin, y, maxWidth, 15);
+      y += 14;
+
+      doc.setDrawColor(70, 68, 68);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageW - margin, y);
+      y += 22;
+    }
+
+    if(y > pageH - 80){ doc.addPage(); newPage(); }
+    doc.setTextColor(sky[0], sky[1], sky[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    y = wrapText(doc, 'Este brief resume la energía, estética y preferencias de Dayana para orientar el concepto de diseño de su espacio.', margin, y, maxWidth, 14);
+    y += 26;
+
+    doc.setTextColor(150, 150, 140);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text('MODERNA ARQUITECTURA — ANDRÉS GALVIS ARQUITECTO', margin, pageH - 40);
+
+    doc.save('brief-dayana-bayona.pdf');
+
+    btn.disabled = false;
+    btn.textContent = '⬇ Descargar PDF';
+  }catch(err){
+    console.error('Error generando PDF:', err);
+    alert('Hubo un problema generando el PDF. Intenta de nuevo.');
+    btn.disabled = false;
+    btn.textContent = '⬇ Descargar PDF';
+  }
+});
+
+showCard(0);
+</script>
+</body>
+</html>
